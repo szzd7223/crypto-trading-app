@@ -12,9 +12,8 @@
 import { useStore } from '@/store';
 import { LatencyTracker } from './latency-tracker';
 import { OrderBookSyncManager } from './orderbook-sync';
+import { getBackendUrl, getWsUrl } from './config';
 import type { WsServerMessage, WsClientMessage, Interval } from '@/types';
-
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:3001/ws';
 const PING_INTERVAL_MS = 5_000;
 const MAX_BACKOFF_MS = 30_000;
 
@@ -50,8 +49,13 @@ class WebSocketClient {
     store.setStatus('connecting');
     store.setStale(false);
 
+    // Warm-up ping to wake up free-tier cloud containers (e.g. Render spin-down)
+    if (typeof window !== 'undefined' && typeof window.fetch === 'function') {
+      fetch(`${getBackendUrl()}/health`).catch(() => {});
+    }
+
     try {
-      this.ws = new WebSocket(WS_URL);
+      this.ws = new WebSocket(getWsUrl());
     } catch {
       this.scheduleReconnect();
       return;
@@ -186,7 +190,7 @@ class WebSocketClient {
   }
 
   private async fetchCandles(interval: Interval): Promise<void> {
-    const backend = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001';
+    const backend = getBackendUrl();
     try {
       const res = await fetch(`${backend}/api/candles?interval=${interval}&limit=200`);
       if (!res.ok) return;

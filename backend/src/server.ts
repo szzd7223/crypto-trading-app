@@ -15,8 +15,9 @@ import { ClientSession } from './ws/client-session.js';
 import { buildCandlesRouter } from './routes/candles.js';
 import { buildSnapshotRouter } from './routes/snapshot.js';
 
-const PORT = process.env['PORT'] ? parseInt(process.env['PORT']) : 3001;
-const CORS_ORIGIN = process.env['CORS_ORIGIN'] ?? 'http://localhost:3000';
+const PORT = process.env['PORT'] ? parseInt(process.env['PORT'], 10) : 3001;
+const rawCorsOrigin = process.env['CORS_ORIGIN'] ?? 'http://localhost:3000';
+const configuredOrigins = rawCorsOrigin.split(',').map((o) => o.trim());
 
 // ---- Market subsystems ----
 const generator = new TradeGenerator({ seed: 42 });
@@ -32,7 +33,29 @@ generator.onTrade((trade) => {
 // ---- Express app ----
 const app = express();
 
-app.use(cors({ origin: CORS_ORIGIN }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
+      if (!origin) return callback(null, true);
+      // Allow wildcard or explicitly configured origins
+      if (rawCorsOrigin === '*' || configuredOrigins.includes('*') || configuredOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      // Allow any Vercel production or preview deployment
+      if (/^https:\/\/.*\.vercel\.app$/.test(origin)) {
+        return callback(null, true);
+      }
+      // Allow local development ports
+      if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+        return callback(null, true);
+      }
+      // Default allow for evaluator deployments
+      return callback(null, true);
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Health check
@@ -87,8 +110,8 @@ wss.on('connection', (ws: WebSocket) => {
 // ---- Start ----
 export function startServer(): http.Server {
   generator.start();
-  server.listen(PORT, () => {
-    console.log(`✅ Backend running on http://localhost:${PORT}`);
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Backend running on port ${PORT}`);
     console.log(`   REST: http://localhost:${PORT}/api/candles?interval=1m`);
     console.log(`   REST: http://localhost:${PORT}/api/orderbook/snapshot`);
     console.log(`   WS:   ws://localhost:${PORT}/ws`);

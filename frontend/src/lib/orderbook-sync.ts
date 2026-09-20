@@ -10,8 +10,7 @@
 // ============================================================
 
 import type { OrderBookDelta, OrderBookLevel, OrderBookSnapshot } from '@/types';
-
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001';
+import { getBackendUrl } from './config';
 
 export interface LocalBook {
   bids: Map<number, number>; // price → qty
@@ -50,7 +49,7 @@ export class OrderBookSyncManager {
     this.deltaBuffer = [];
 
     try {
-      const res = await fetch(`${BACKEND}/api/orderbook/snapshot`);
+      const res = await fetch(`${getBackendUrl()}/api/orderbook/snapshot`);
       if (!res.ok) throw new Error(`Snapshot fetch failed: ${res.status}`);
       const snapshot: OrderBookSnapshot = await res.json() as OrderBookSnapshot;
 

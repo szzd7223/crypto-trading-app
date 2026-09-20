@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: crypto-trading-backend
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: CORS_ORIGIN
+        value: "*"
