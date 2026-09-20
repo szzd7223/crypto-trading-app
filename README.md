@@ -165,7 +165,7 @@ Zustand was chosen over Redux or React Context because:
   - `{ type: "subscribe", interval: "1m" | "5m" }`
   - `{ type: "ping", id: string, clientTs: number }`
   - `{ type: "latency_report", rtt: number, jitter: number }`
-  - `{ type: "tier_override", tier: "full" | "degraded" | "minimal" | null }`
+  - `{ type: "force_tier", tier: "full" | "degraded" | "minimal" | null }`
 - **Server → Client**:
   - `{ type: "connection_ready", sessionId: string, tier: string, effectiveRateMs: number }`
   - `{ type: "pong", id: string, clientTs: number, serverTs: number }`
@@ -208,13 +208,13 @@ Zustand was chosen over Redux or React Context because:
 ### Delivery Tiers & Target Rates
 | Tier | Target Delivery Interval | Downgrade Criteria | Upgrade Criteria |
 | :--- | :--- | :--- | :--- |
-| **FULL** | **0 ms** (immediate / live) | RTT > 150ms OR Jitter > 40ms | Baseline |
-| **DEGRADED** | **1,000 ms** (batched 1s) | RTT > 350ms OR Jitter > 100ms | 3 consecutive reports with RTT < 100ms & Jitter < 25ms |
-| **MINIMAL** | **5,000 ms** (batched 5s) | Severe latency / packet drop | 3 consecutive reports with RTT < 250ms & Jitter < 70ms |
+| **FULL** | **0 ms** (immediate / live) | RTT > 150ms OR Jitter > 50ms | Baseline |
+| **DEGRADED** | **2,000 ms** (batched 2s) | RTT > 500ms OR Jitter > 150ms | 3 consecutive reports with RTT $\le$ 150ms & Jitter $\le$ 50ms |
+| **MINIMAL** | **10,000 ms** (batched 10s) | Severe latency / packet drop | 3 consecutive reports with RTT $\le$ 500ms & Jitter $\le$ 150ms |
 
 ### Hysteresis & Fallback
 - **Dual-direction Hysteresis**: Downgrades occur after 2 consecutive degraded reports to prevent transient network spikes from flipping tiers. Upgrades require 3 consecutive healthy reports before recovering to a higher tier.
-- **Missing-Report Fallback**: If the client fails to send latency reports for 15 seconds, the backend automatically steps down the tier and marks delivery as degraded.
+- **Missing-Report Handling**: If the client does not send latency reports for 30 seconds (e.g., backgrounded or inactive tab), the backend holds the current tier without penalizing silence.
 - **Data Integrity**: Slower delivery tiers only throttle the frequency of WebSocket emissions. The underlying engine processes 100% of trades and OHLCV math remains mathematically exact across all tiers.
 
 ---

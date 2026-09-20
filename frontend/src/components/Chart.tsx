@@ -32,7 +32,7 @@ function toVolumeBar(c: OHLCVCandle) {
   return {
     time: (c.openTime / 1000) as import('lightweight-charts').UTCTimestamp,
     value: c.volume,
-    color: isUp ? 'rgba(14, 203, 129, 0.45)' : 'rgba(246, 70, 93, 0.45)',
+    color: isUp ? 'rgba(14, 203, 129, 0.6)' : 'rgba(246, 70, 93, 0.6)',
   };
 }
 
@@ -82,6 +82,11 @@ export default function Chart() {
         textColor:  '#848e9c',
         fontFamily: 'Geist Mono, JetBrains Mono, Menlo, monospace',
         fontSize:   12,
+        panes: {
+          separatorColor: '#1e2638',
+          separatorHoverColor: '#3b82f6',
+          enableResize: true,
+        },
       },
       grid: {
         vertLines: { color: '#161c28' },
@@ -106,7 +111,7 @@ export default function Chart() {
         borderColor: '#1e2638',
         scaleMargins: {
           top: 0.08,
-          bottom: 0.22, // leave room for volume histogram at bottom
+          bottom: 0.08,
         },
       },
       timeScale: {
@@ -121,24 +126,37 @@ export default function Chart() {
       handleScale:  true,
     });
 
-    // Candlestick Series (Price)
+    // Candlestick Series (Price) - Main Pane 0
     const candleSeries = chart.addSeries(CandlestickSeries, CANDLE_SERIES_OPTIONS);
     candleSeriesRef.current = candleSeries;
 
-    // Volume Histogram Series (V in OHLCV)
-    const volumeSeries = chart.addSeries(HistogramSeries, {
-      priceFormat: {
-        type: 'volume',
+    // Volume Histogram Series (V in OHLCV) - Dedicated Pane 1 with right Y-axis
+    const volumeSeries = chart.addSeries(
+      HistogramSeries,
+      {
+        priceFormat: {
+          type: 'volume',
+        },
+        priceScaleId: 'right',
+        title: 'Volume',
       },
-      priceScaleId: '', // Overlay without its own scale column
-    });
+      1
+    );
     volumeSeries.priceScale().applyOptions({
+      borderColor: '#1e2638',
       scaleMargins: {
-        top: 0.8, // occupies bottom 20% of canvas
+        top: 0.15,
         bottom: 0,
       },
     });
     volumeSeriesRef.current = volumeSeries;
+
+    // Set proportional heights: ~80% candlesticks, ~20% volume
+    const panes = chart.panes();
+    if (panes.length >= 2) {
+      panes[0]?.setStretchFactor(4);
+      panes[1]?.setStretchFactor(1);
+    }
 
     chartRef.current = chart;
 
