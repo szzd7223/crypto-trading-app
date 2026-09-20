@@ -1,64 +1,121 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useStore } from '@/store';
 
-function fmt(n: number) {
+function fmtPrice(n: number) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-export default function OrderBook() {
-  const bids = useStore(s => s.bids);
-  const asks = useStore(s => s.asks);
+function fmtQty(n: number) {
+  return n.toFixed(4);
+}
 
-  const maxBid = bids.reduce((m, b) => Math.max(m, b.quantity), 0) || 1;
-  const maxAsk = asks.reduce((m, a) => Math.max(m, a.quantity), 0) || 1;
+export default function OrderBook() {
+  const bids  = useStore(s => s.bids);
+  const asks  = useStore(s => s.asks);
+  const price = useStore(s => s.price);
+
+  // Compute cumulative depths and max for the visual depth bar
+  const { asksWithTotal, bidsWithTotal, maxTotal } = useMemo(() => {
+    let askAcc = 0;
+    const asksRev = [...asks].slice(0, 15);
+    const asksWithTotal = asksRev.map(a => {
+      askAcc += a.quantity;
+      return { ...a, total: askAcc };
+    });
+
+    let bidAcc = 0;
+    const bidsSlice = bids.slice(0, 15);
+    const bidsWithTotal = bidsSlice.map(b => {
+      bidAcc += b.quantity;
+      return { ...b, total: bidAcc };
+    });
+
+    const maxTotal = Math.max(askAcc, bidAcc, 1);
+    return { asksWithTotal, bidsWithTotal, maxTotal };
+  }, [bids, asks]);
+
+  const bestBid = bids[0]?.price;
+  const bestAsk = asks[0]?.price;
+  const spread = bestBid && bestAsk ? bestAsk - bestBid : null;
+  const spreadPct = spread && bestAsk ? (spread / bestAsk) * 100 : null;
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-white">
-      {/* Section title */}
-      <div className="px-4 py-2.5 border-b border-gray-200 shrink-0">
-        <h2 className="text-sm font-semibold text-gray-700">Order Book</h2>
+    <div className="flex flex-col h-full bg-[#121721] select-none">
+      {/* Panel Title */}
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#1e2638] shrink-0">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-[#eaecef]">Order Book</h2>
+        <span className="text-xs text-[#848e9c] font-mono font-medium">10 Levels</span>
       </div>
 
-      {/* Column labels */}
-      <div className="flex justify-between px-4 py-1.5 text-xs text-gray-400 font-medium shrink-0">
+      {/* Column Headers */}
+      <div className="grid grid-cols-3 px-4 py-1.5 text-xs font-semibold text-[#848e9c] border-b border-[#161c28] shrink-0">
         <span>Price (USDT)</span>
-        <span>Qty (BTC)</span>
+        <span className="text-right">Size (BTC)</span>
+        <span className="text-right">Total</span>
       </div>
 
-      {/* Asks (sell offers) — reversed so lowest ask is nearest the spread */}
-      <div className="flex-1 flex flex-col-reverse overflow-hidden">
-        {asks.map(a => (
-          <div key={a.price} className="relative flex justify-between px-4 py-[3px] font-mono text-[13px] hover:bg-gray-50">
+      {/* Asks (Sell Orders - Down) - lowest ask at the bottom */}
+      <div className="flex-1 flex flex-col-reverse justify-end overflow-hidden">
+        {asksWithTotal.map(a => {
+          const depthPct = Math.min((a.total / maxTotal) * 100, 100);
+          return (
             <div
-              className="absolute inset-y-0 right-0 bg-red-100 transition-[width] duration-150"
-              style={{ width: `${(a.quantity / maxAsk) * 100}%` }}
-            />
-            <span className="relative font-medium text-red-600">{fmt(a.price)}</span>
-            <span className="relative text-gray-600">{a.quantity.toFixed(4)}</span>
-          </div>
-        ))}
+              key={a.price}
+              className="relative grid grid-cols-3 px-4 py-1 font-mono text-xs sm:text-sm tabular-nums hover:bg-[#181e2b] transition-colors cursor-default"
+            >
+              <div
+                className="absolute inset-y-0 right-0 bg-[#f6465d]/15 pointer-events-none transition-[width] duration-100"
+                style={{ width: `${depthPct}%` }}
+              />
+              <span className="relative font-bold text-[#f6465d]">{fmtPrice(a.price)}</span>
+              <span className="relative text-right font-medium text-[#eaecef]">{fmtQty(a.quantity)}</span>
+              <span className="relative text-right font-medium text-[#848e9c]">{fmtQty(a.total)}</span>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Spread */}
-      {bids[0] && asks[0] && (
-        <div className="text-center text-xs text-gray-500 py-1.5 border-y border-gray-100 bg-gray-50 shrink-0">
-          Spread: <span className="font-mono font-medium">{(asks[0].price - bids[0].price).toFixed(2)}</span>
+      {/* Mid-Market Spread & Live Price Bar */}
+      <div className="flex items-center justify-between px-4 py-2 border-y border-[#1e2638] bg-[#0e131d] shrink-0">
+        <div className="flex items-baseline gap-2 font-mono">
+          <span className="text-base sm:text-lg font-bold text-white tabular-nums">
+            {price !== null ? fmtPrice(price) : '—'}
+          </span>
+          <span className="text-xs font-semibold text-[#848e9c]">USDT</span>
         </div>
-      )}
 
-      {/* Bids (buy offers) */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {bids.map(b => (
-          <div key={b.price} className="relative flex justify-between px-4 py-[3px] font-mono text-[13px] hover:bg-gray-50">
-            <div
-              className="absolute inset-y-0 right-0 bg-green-100 transition-[width] duration-150"
-              style={{ width: `${(b.quantity / maxBid) * 100}%` }}
-            />
-            <span className="relative font-medium text-green-700">{fmt(b.price)}</span>
-            <span className="relative text-gray-600">{b.quantity.toFixed(4)}</span>
+        {spread !== null && (
+          <div className="flex items-center gap-1.5 text-xs font-mono text-[#94a3b8]">
+            <span className="text-[#848e9c] font-medium">Spread:</span>
+            <span className="text-[#eaecef] font-bold">{spread.toFixed(2)}</span>
+            {spreadPct !== null && (
+              <span className="text-[#848e9c] text-xs font-medium">({spreadPct.toFixed(2)}%)</span>
+            )}
           </div>
-        ))}
+        )}
+      </div>
+
+      {/* Bids (Buy Orders - Up) - highest bid at the top */}
+      <div className="flex-1 flex flex-col justify-start overflow-hidden">
+        {bidsWithTotal.map(b => {
+          const depthPct = Math.min((b.total / maxTotal) * 100, 100);
+          return (
+            <div
+              key={b.price}
+              className="relative grid grid-cols-3 px-4 py-1 font-mono text-xs sm:text-sm tabular-nums hover:bg-[#181e2b] transition-colors cursor-default"
+            >
+              <div
+                className="absolute inset-y-0 right-0 bg-[#0ecb81]/15 pointer-events-none transition-[width] duration-100"
+                style={{ width: `${depthPct}%` }}
+              />
+              <span className="relative font-bold text-[#0ecb81]">{fmtPrice(b.price)}</span>
+              <span className="relative text-right font-medium text-[#eaecef]">{fmtQty(b.quantity)}</span>
+              <span className="relative text-right font-medium text-[#848e9c]">{fmtQty(b.total)}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

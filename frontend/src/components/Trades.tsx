@@ -2,13 +2,20 @@
 
 import { useStore } from '@/store';
 
-function fmt(n: number) {
+function fmtPrice(n: number) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtQty(n: number) {
+  return n.toFixed(4);
 }
 
 function fmtTime(ts: number) {
   return new Date(ts).toLocaleTimeString('en-US', {
-    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
   });
 }
 
@@ -16,25 +23,44 @@ export default function Trades() {
   const trades = useStore(s => s.recentTrades);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-white">
-      <div className="px-4 py-2.5 border-b border-gray-200 shrink-0">
-        <h2 className="text-sm font-semibold text-gray-700">Recent Trades</h2>
+    <div className="flex flex-col h-full bg-[#121721] select-none">
+      {/* Panel Title */}
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#1e2638] shrink-0">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-[#eaecef]">Recent Trades</h2>
+        <span className="text-xs text-[#848e9c] font-mono font-medium">Live Stream</span>
       </div>
-      <div className="flex justify-between px-4 py-1.5 text-xs text-gray-400 font-medium shrink-0">
-        <span>Price</span>
-        <span>Qty</span>
-        <span>Time</span>
+
+      {/* Column Headers */}
+      <div className="grid grid-cols-3 px-4 py-1.5 text-xs font-semibold text-[#848e9c] border-b border-[#161c28] shrink-0">
+        <span>Price (USDT)</span>
+        <span className="text-right">Size (BTC)</span>
+        <span className="text-right">Time</span>
       </div>
-      <div className="flex-1 overflow-y-auto">
+
+      {/* Trades Stream */}
+      <div className="flex-1 overflow-y-auto divide-y divide-transparent">
         {trades.map(t => (
-          <div key={t.id} className="flex justify-between px-4 py-[4px] font-mono text-[13px] hover:bg-gray-50">
-            <span className={`font-medium ${t.side === 'buy' ? 'text-green-700' : 'text-red-600'}`}>
-              {fmt(t.price)}
+          <div
+            key={t.id}
+            className="grid grid-cols-3 px-4 py-1 font-mono text-xs sm:text-sm tabular-nums hover:bg-[#181e2b] transition-colors cursor-default"
+          >
+            <span
+              className={`font-bold ${
+                t.side === 'buy' ? 'text-[#0ecb81]' : 'text-[#f6465d]'
+              }`}
+            >
+              {fmtPrice(t.price)}
             </span>
-            <span className="text-gray-600">{t.quantity.toFixed(4)}</span>
-            <span className="text-gray-400 text-xs">{fmtTime(t.timestamp)}</span>
+            <span className="text-right font-medium text-[#eaecef]">{fmtQty(t.quantity)}</span>
+            <span className="text-right text-[#848e9c] text-xs font-medium">{fmtTime(t.timestamp)}</span>
           </div>
         ))}
+
+        {trades.length === 0 && (
+          <div className="flex items-center justify-center h-24 text-sm text-[#848e9c]">
+            Waiting for trades...
+          </div>
+        )}
       </div>
     </div>
   );

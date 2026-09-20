@@ -17,29 +17,33 @@ export default function TradingPage() {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
+    <div className="flex flex-col h-screen overflow-hidden bg-[#07090e] p-4 sm:p-5 lg:px-7 lg:py-4 gap-3.5 sm:gap-4 text-[#eaecef]">
+      {/* Top Market Header */}
       <Header />
-      <div className="flex flex-1 min-h-0">
 
-        {/* Chart — main area */}
-        <main className="flex-1 min-w-0 border-r border-gray-200">
+      {/* Main Trading Area */}
+      <div className="flex flex-1 min-h-0 gap-3.5 sm:gap-4 overflow-hidden">
+        {/* Left: Candlestick Chart Area */}
+        <main className="flex-1 min-w-0 h-full rounded-xl border border-[#1e2638] bg-[#0e131d] overflow-hidden shadow-lg">
           <Chart />
         </main>
 
-        {/* Sidebar — fixed 300px, clearly readable */}
-        <aside className="w-[300px] shrink-0 flex flex-col overflow-hidden bg-white border-l border-gray-200">
-          <div className="flex-[5] min-h-0 border-b border-gray-200 overflow-hidden">
+        {/* Right Sidebar: Order Book & Recent Trades */}
+        <aside className="w-[360px] xl:w-[390px] shrink-0 flex flex-col h-full gap-2.5 sm:gap-3 overflow-hidden">
+          {/* Order Book: ~58% of sidebar */}
+          <div className="flex-[58] min-h-0 rounded-xl border border-[#1e2638] bg-[#121721] overflow-hidden shadow-lg">
             <OrderBook />
           </div>
-          <div className="flex-[4] min-h-0 border-b border-gray-200 overflow-hidden">
+
+          {/* Recent Trades: ~42% of sidebar */}
+          <div className="flex-[42] min-h-0 rounded-xl border border-[#1e2638] bg-[#121721] overflow-hidden shadow-lg">
             <Trades />
           </div>
-          <div className="shrink-0">
-            <DebugPanel />
-          </div>
         </aside>
-
       </div>
+
+      {/* Bottom Telemetry Dock */}
+      <DebugPanel />
     </div>
   );
 }
