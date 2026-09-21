@@ -39,7 +39,6 @@ export class SeededRandom {
 // Plain English:
 //  - We start at a base price (e.g. $43,000)
 //  - Every tick, price changes by a tiny random % (up or down)
-//  - "Drift" = slight upward bias per tick
 //  - "Volatility" = how big the random swings are
 //  - "Mean reversion" = a gentle pull back toward the start price
 //    so it never drifts to $0 or infinity
@@ -52,8 +51,6 @@ import type { OrderBook } from "./orderbook.js";
 interface GeneratorConfig {
   seed?: number;
   startPrice?: number;
-  /** Per-tick drift (fraction). ~0 for flat market */
-  drift?: number;
   /** Per-tick volatility (fraction). Higher = wilder swings */
   volatility?: number;
   /** Strength of mean reversion pull (0 = off, 1 = instant snap) */
@@ -68,7 +65,6 @@ export class TradeGenerator {
   private rng: SeededRandom;
   private currentPrice: number;
   private readonly startPrice: number;
-  private readonly drift: number;
   private readonly volatility: number;
   private readonly meanReversionStrength: number;
   private readonly minIntervalMs: number;
@@ -84,7 +80,6 @@ export class TradeGenerator {
     this.rng = new SeededRandom(config.seed ?? 42);
     this.startPrice = config.startPrice ?? 43_000;
     this.currentPrice = this.startPrice;
-    this.drift = config.drift ?? 0.00002;
     this.volatility = config.volatility ?? 0.00004; // Realistic ~$15-$80 1m candle movements
     this.meanReversionStrength = config.meanReversionStrength ?? 0.00005; // Gentle long-term stabilization
     this.minIntervalMs = config.minIntervalMs ?? 200;

@@ -1,9 +1,12 @@
-'use client';
+"use client";
 
-import { useStore } from '@/store';
+import { useStore } from "@/store";
 
 function fmtPrice(n: number) {
-  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 function fmtQty(n: number) {
@@ -11,23 +14,35 @@ function fmtQty(n: number) {
 }
 
 function fmtTime(ts: number) {
-  return new Date(ts).toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
+  return new Date(ts).toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
     hour12: false,
   });
 }
 
 export default function Trades() {
-  const trades = useStore(s => s.recentTrades);
+  const trades = useStore((s) => s.recentTrades);
+  const isStale = useStore((s) => s.isStale);
 
   return (
     <div className="flex flex-col h-full bg-[#121721] select-none">
       {/* Panel Title */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-[#1e2638] shrink-0">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-[#eaecef]">Recent Trades</h2>
-        <span className="text-[10px] text-[#848e9c] font-mono font-medium">Live Stream</span>
+        <h2 className="text-xs font-bold uppercase tracking-wider text-[#eaecef]">
+          Recent Trades
+        </h2>
+        <div className="flex items-center gap-2">
+          {isStale && (
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#f59e0b] border border-[#f59e0b]/40 rounded px-1.5 py-0.5 bg-[#f59e0b]/10">
+              STALE
+            </span>
+          )}
+          <span className="text-[10px] text-[#848e9c] font-mono font-medium">
+            Live Stream
+          </span>
+        </div>
       </div>
 
       {/* Column Headers */}
@@ -39,20 +54,24 @@ export default function Trades() {
 
       {/* Trades Stream */}
       <div className="flex-1 overflow-y-auto divide-y divide-transparent">
-        {trades.map(t => (
+        {trades.map((t) => (
           <div
             key={t.id}
             className="grid grid-cols-3 px-4 py-0.5 font-mono text-xs tabular-nums hover:bg-[#181e2b] transition-colors cursor-default"
           >
             <span
               className={`font-bold ${
-                t.side === 'buy' ? 'text-[#0ecb81]' : 'text-[#f6465d]'
+                t.side === "buy" ? "text-[#0ecb81]" : "text-[#f6465d]"
               }`}
             >
               {fmtPrice(t.price)}
             </span>
-            <span className="text-right font-medium text-[#eaecef]">{fmtQty(t.quantity)}</span>
-            <span className="text-right text-[#848e9c] text-xs font-medium">{fmtTime(t.timestamp)}</span>
+            <span className="text-right font-medium text-[#eaecef]">
+              {fmtQty(t.quantity)}
+            </span>
+            <span className="text-right text-[#848e9c] text-xs font-medium">
+              {fmtTime(t.timestamp)}
+            </span>
           </div>
         ))}
 

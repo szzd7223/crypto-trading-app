@@ -77,7 +77,7 @@ This repository is configured as a monorepo containing both `/backend` and `/fro
 2. Select your GitHub repository.
 3. In the project setup screen:
    - **Framework Preset**: `Next.js`
-   - **Root Directory**: Click *Edit* and select `frontend`
+   - **Root Directory**: Click _Edit_ and select `frontend`
    - **Build & Development Settings**: Leave default (`next build`)
    - **Environment Variables**:
      - `NEXT_PUBLIC_BACKEND_URL`: `https://<your-backend-app>.onrender.com`
@@ -96,23 +96,28 @@ This repository is configured as a monorepo containing both `/backend` and `/fro
 ## 2. Local Development
 
 ### Prerequisites
+
 - Node.js >= 20.0.0
 - npm >= 9.0.0
 
 ### Run Backend
+
 ```bash
 cd backend
 npm install
 npm run dev
 ```
+
 Backend starts on `http://localhost:3001` (WebSocket on `ws://localhost:3001/ws`).
 
 ### Run Frontend
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+
 Frontend runs on `http://localhost:3000`.
 
 ---
@@ -120,6 +125,7 @@ Frontend runs on `http://localhost:3000`.
 ## 3. Architecture & Design Choices
 
 ### Frontend Architecture (Next.js App Router)
+
 - **Framework Choice**: Next.js App Router was chosen for first-class TypeScript support, built-in route optimization, automatic code splitting, and zero-config deployment on Vercel.
 - **Client-Side Rendering (CSR)**: Real-time trading screens require client-side WebSockets, high-frequency canvas/DOM updates, and browser event listeners. The chart component is dynamically loaded with `{ ssr: false }` to avoid SSR hydration mismatches with TradingView canvas rendering.
 - **Decoupled Layers**:
@@ -130,6 +136,7 @@ Frontend runs on `http://localhost:3000`.
   - `src/components/*`: Pure reactive UI components subscribing to selective store state.
 
 ### Backend Architecture (Express + ws)
+
 - **Node.js + TypeScript**: Provides non-blocking event-driven I/O ideal for handling persistent WebSocket connections and high-throughput trade events.
 - **Modular Subsystems**:
   - `TradeGenerator`: Deterministic geometric Brownian motion + jump diffusion trade feed.
@@ -143,6 +150,7 @@ Frontend runs on `http://localhost:3000`.
 ## 4. State Management (Zustand)
 
 Zustand was chosen over Redux or React Context because:
+
 1. **Zero Unnecessary Rerenders**: Fine-grained slice subscriptions (e.g., `useStore(state => state.price)`) ensure only relevant components rerender during high-frequency updates.
 2. **Outside-React Access**: Allows WebSocket callbacks (`wsClient`) and sync managers (`OrderBookSyncManager`) to dispatch actions directly using `useStore.getState()` without React context wrappers.
 3. **Modular Slices**:
@@ -156,11 +164,13 @@ Zustand was chosen over Redux or React Context because:
 ## 5. Protocols & Generated Market Data
 
 ### REST Endpoints
+
 - `GET /health` — Returns status code 200 and server timestamp for liveness probes and free-tier container wakeups.
 - `GET /api/candles?interval=1m|5m&limit=200` — Returns historical OHLCV candle arrays.
 - `GET /api/orderbook/snapshot` — Returns snapshot containing current top 20 bids and asks with `sequenceId` and timestamp.
 
 ### WebSocket Feeds (`ws://.../ws`)
+
 - **Client → Server**:
   - `{ type: "subscribe", interval: "1m" | "5m" }`
   - `{ type: "ping", id: string, clientTs: number }`
@@ -179,6 +189,7 @@ Zustand was chosen over Redux or React Context because:
 ## 6. Chart & Order-Book Synchronization
 
 ### Order-Book Snapshot + Delta Reconciliation
+
 1. On WebSocket connection, the client marks state as `syncing` and begins buffering incoming WebSocket deltas in memory.
 2. The client fetches the REST snapshot (`/api/orderbook/snapshot`).
 3. Upon receiving the snapshot:
@@ -189,6 +200,7 @@ Zustand was chosen over Redux or React Context because:
 5. **Gap Recovery**: If an incoming delta arrives where `delta.sequenceId !== currentSequenceId + 1`, a sequence gap is detected. The manager immediately clears its book and triggers a full resynchronization.
 
 ### Candle History & Live Active Candle Updates
+
 - On interval selection (`1m` or `5m`), the client fetches the last 200 historical candles via REST.
 - As new trades execute, the backend candle engine updates the active open candle and streams it to subscribed clients.
 - If a candle's timestamp moves to a new interval bucket, the previous candle closes and a new active candle opens seamlessly.
@@ -198,6 +210,7 @@ Zustand was chosen over Redux or React Context because:
 ## 7. Adaptive Live Chart Delivery & Hysteresis
 
 ### Latency and Jitter Measurement (RFC 3550 standard)
+
 - Every 5 seconds, the frontend sends a ping containing a UUID and client timestamp.
 - On pong reply:
   - $\text{RTT} = \text{now} - \text{clientTs}$
@@ -206,15 +219,17 @@ Zustand was chosen over Redux or React Context because:
 - Telemetry is reported to the backend via `latency_report`.
 
 ### Delivery Tiers & Target Rates
-| Tier | Target Delivery Interval | Downgrade Criteria | Upgrade Criteria |
-| :--- | :--- | :--- | :--- |
-| **FULL** | **0 ms** (immediate / live) | RTT > 150ms OR Jitter > 50ms | Baseline |
-| **DEGRADED** | **2,000 ms** (batched 2s) | RTT > 500ms OR Jitter > 150ms | 3 consecutive reports with RTT $\le$ 150ms & Jitter $\le$ 50ms |
-| **MINIMAL** | **10,000 ms** (batched 10s) | Severe latency / packet drop | 3 consecutive reports with RTT $\le$ 500ms & Jitter $\le$ 150ms |
+
+| Tier         | Target Delivery Interval    | Downgrade Criteria            | Upgrade Criteria                                                |
+| :----------- | :-------------------------- | :---------------------------- | :-------------------------------------------------------------- |
+| **FULL**     | **0 ms** (immediate / live) | RTT > 150ms OR Jitter > 50ms  | Baseline                                                        |
+| **DEGRADED** | **2,000 ms** (batched 2s)   | RTT > 500ms OR Jitter > 150ms | 3 consecutive reports with RTT $\le$ 150ms & Jitter $\le$ 50ms  |
+| **MINIMAL**  | **10,000 ms** (batched 10s) | Severe latency / packet drop  | 3 consecutive reports with RTT $\le$ 500ms & Jitter $\le$ 150ms |
 
 ### Hysteresis & Fallback
+
 - **Dual-direction Hysteresis**: Downgrades occur after 2 consecutive degraded reports to prevent transient network spikes from flipping tiers. Upgrades require 3 consecutive healthy reports before recovering to a higher tier.
-- **Missing-Report Handling**: If the client does not send latency reports for 30 seconds (e.g., backgrounded or inactive tab), the backend holds the current tier without penalizing silence.
+- **Missing-Report Handling**: If the client does not send latency reports for 30 seconds (e.g., backgrounded or inactive tab), the backend holds the current tier without penalizing silence. The silence timer resets on every received `latency_report`; if none arrives within the 30-second window, the tier is frozen — not downgraded.
 - **Data Integrity**: Slower delivery tiers only throttle the frequency of WebSocket emissions. The underlying engine processes 100% of trades and OHLCV math remains mathematically exact across all tiers.
 
 ---
@@ -230,6 +245,7 @@ Zustand was chosen over Redux or React Context because:
 ## 9. Debug Controls
 
 A dedicated telemetry bar is embedded at the bottom of the interface:
+
 - **Network Status & Tier Badge**: Displays active tier (`FULL`, `DEGRADED`, `MINIMAL`) and current update rate in milliseconds.
 - **Live Latency & Jitter**: Real-time RTT and jitter metrics.
 - **Manual Tier Override Buttons**: Allows forcing connection into `FULL`, `DEGRADED`, or `MINIMAL` to demonstrate throttling behavior on good networks.
@@ -258,5 +274,34 @@ The test suite includes end-to-end tests for the adaptive delivery state machine
 
 ## 11. Known Limitations
 
-- **Simulated Symbol**: Uses a single synthetic market pair (`BTC/USDT`).
+- **Simulated symbol**: Uses a single synthetic market pair (`BTC/USDT`) — not connected to any real exchange or market feed.
+- **View-only**: No order placement or trading functionality. The app is a read-only market display.
+- **No authentication**: No user accounts, sessions, or access control.
+- **No persistence**: All state is in-memory. Restarting the backend resets market history and the order book.
+- **Session stats, not 24h**: The High / Low / Volume figures in the header reflect the loaded candle window (~200 candles), not a true rolling 24-hour window.
 - **Render Free Tier Cold-Start**: Free instances on Render spin down after 15 minutes of inactivity. When visiting the frontend after inactivity, the backend may take 30–50 seconds to boot. The frontend includes automatic health probes and exponential backoff retry to handle this gracefully.
+
+---
+
+## 12. Packages Used
+
+### Frontend
+
+| Package               | Purpose                                                                                                                                                                   |
+| :-------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `next`                | App framework — App Router, SSR/CSR, code splitting, zero-config Vercel deployment                                                                                        |
+| `react` / `react-dom` | UI rendering                                                                                                                                                              |
+| `zustand`             | Lightweight state management with fine-grained subscriptions and outside-React access                                                                                     |
+| `lightweight-charts`  | Canvas-based candlestick and volume chart renderer. **Pure renderer only** — no data fetching or streaming; all data is supplied by the app's own WebSocket/REST pipeline |
+| `tailwindcss`         | Utility-first CSS framework                                                                                                                                               |
+
+### Backend
+
+| Package                    | Purpose                                                                |
+| :------------------------- | :--------------------------------------------------------------------- |
+| `express`                  | HTTP server and REST routing                                           |
+| `ws`                       | WebSocket server                                                       |
+| `cors`                     | CORS middleware for cross-origin browser requests                      |
+| `tsx` _(dev)_              | TypeScript execution for `npm run dev` without a separate compile step |
+| `ts-jest` / `jest` _(dev)_ | Test runner and TypeScript transform for the backend test suite        |
+| `typescript` _(dev)_       | TypeScript compiler for production builds (`npm run build`)            |

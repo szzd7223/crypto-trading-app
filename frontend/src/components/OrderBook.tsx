@@ -18,19 +18,20 @@ export default function OrderBook() {
   const bids = useStore((s) => s.bids);
   const asks = useStore((s) => s.asks);
   const price = useStore((s) => s.price);
+  const isStale = useStore((s) => s.isStale);
 
   // Compute cumulative depths and max for the visual depth bar
   const { asksWithTotal, bidsWithTotal, maxTotal } = useMemo(() => {
     let runningAsk = 0;
     const asksWithTotal = [];
-    for (const a of asks.slice(0, 15)) {
+    for (const a of asks.slice(0, 10)) {
       runningAsk += a.quantity;
       asksWithTotal.push({ ...a, total: runningAsk });
     }
 
     let runningBid = 0;
     const bidsWithTotal = [];
-    for (const b of bids.slice(0, 15)) {
+    for (const b of bids.slice(0, 10)) {
       runningBid += b.quantity;
       bidsWithTotal.push({ ...b, total: runningBid });
     }
@@ -51,9 +52,16 @@ export default function OrderBook() {
         <h2 className="text-xs font-bold uppercase tracking-wider text-[#eaecef]">
           Order Book
         </h2>
-        <span className="text-[10px] text-[#848e9c] font-mono font-medium">
-          10 Levels
-        </span>
+        <div className="flex items-center gap-2">
+          {isStale && (
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#f59e0b] border border-[#f59e0b]/40 rounded px-1.5 py-0.5 bg-[#f59e0b]/10">
+              STALE
+            </span>
+          )}
+          <span className="text-[10px] text-[#848e9c] font-mono font-medium">
+            10 Levels
+          </span>
+        </div>
       </div>
 
       {/* Column Headers */}

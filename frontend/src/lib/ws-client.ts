@@ -67,6 +67,13 @@ class WebSocketClient {
       useStore.getState().setStatus("connected");
       // Re-subscribe to current interval
       this.send({ type: "subscribe", interval: this.currentInterval });
+      // Re-apply manual tier override if one was active before disconnect.
+      // The backend creates a fresh session on each connection with no memory
+      // of the previous override, so we must re-send it.
+      const override = useStore.getState().override;
+      if (override !== null) {
+        this.send({ type: "force_tier", tier: override });
+      }
       // Fetch initial candle history and recent trades
       void this.fetchCandles(this.currentInterval);
       void this.fetchTrades();
