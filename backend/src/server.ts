@@ -2,22 +2,23 @@
 // Express + WebSocket Server
 // ============================================================
 
-import express from 'express';
-import cors from 'cors';
-import http from 'http';
-import { WebSocketServer, WebSocket } from 'ws';
-import { randomUUID } from 'crypto';
+import express from "express";
+import cors from "cors";
+import http from "http";
+import { WebSocketServer, WebSocket } from "ws";
+import { randomUUID } from "crypto";
 
-import { TradeGenerator } from './market/generator.js';
-import { OrderBook } from './market/orderbook.js';
-import { CandleEngine } from './market/candle-engine.js';
-import { ClientSession } from './ws/client-session.js';
-import { buildCandlesRouter } from './routes/candles.js';
-import { buildSnapshotRouter } from './routes/snapshot.js';
+import { TradeGenerator } from "./market/generator.js";
+import { OrderBook } from "./market/orderbook.js";
+import { CandleEngine } from "./market/candle-engine.js";
+import { ClientSession } from "./ws/client-session.js";
+import { buildCandlesRouter } from "./routes/candles.js";
+import { buildSnapshotRouter } from "./routes/snapshot.js";
+import { buildTradesRouter } from "./routes/trades.js";
 
-const PORT = process.env['PORT'] ? parseInt(process.env['PORT'], 10) : 3001;
-const rawCorsOrigin = process.env['CORS_ORIGIN'] ?? 'http://localhost:3000';
-const configuredOrigins = rawCorsOrigin.split(',').map((o) => o.trim());
+const PORT = process.env["PORT"] ? parseInt(process.env["PORT"], 10) : 3001;
+const rawCorsOrigin = process.env["CORS_ORIGIN"] ?? "http://localhost:3000";
+const configuredOrigins = rawCorsOrigin.split(",").map((o) => o.trim());
 
 // ---- Market subsystems ----
 const generator = new TradeGenerator({ seed: 42 });
@@ -30,6 +31,9 @@ generator.onTrade((trade) => {
   candleEngine.processTrade(trade);
 });
 
+// Bootstrap historical market data (1000 minutes = ~16.6h back, zero discrepancy between 1m & 5m)
+generator.bootstrapHistory(candleEngine, orderBook, 1000);
+
 // ---- Express app ----
 const app = express();
 
@@ -39,7 +43,11 @@ app.use(
       // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
       if (!origin) return callback(null, true);
       // Allow wildcard or explicitly configured origins
-      if (rawCorsOrigin === '*' || configuredOrigins.includes('*') || configuredOrigins.includes(origin)) {
+      if (
+        rawCorsOrigin === "*" ||
+        configuredOrigins.includes("*") ||
+        configuredOrigins.includes(origin)
+      ) {
         return callback(null, true);
       }
       // Allow any Vercel production or preview deployment
@@ -54,43 +62,47 @@ app.use(
       return callback(null, true);
     },
     credentials: true,
-  })
+  }),
 );
 app.use(express.json());
 
 // Health check
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: Date.now() });
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok", timestamp: Date.now() });
 });
 
 // REST routes
-app.use('/api/candles', buildCandlesRouter(candleEngine));
-app.use('/api/orderbook/snapshot', buildSnapshotRouter(orderBook));
+app.use("/api/candles", buildCandlesRouter(candleEngine));
+app.use("/api/orderbook/snapshot", buildSnapshotRouter(orderBook));
+app.use("/api/trades", buildTradesRouter(generator));
 
 // ---- HTTP + WebSocket server ----
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server, path: '/ws' });
+const wss = new WebSocketServer({ server, path: "/ws" });
 
 const activeSessions = new Map<string, ClientSession>();
 
-wss.on('connection', (ws: WebSocket) => {
+wss.on("connection", (ws: WebSocket) => {
   const sessionId = randomUUID();
   console.log(`[WS] Client connected: ${sessionId}`);
 
   const session = new ClientSession(ws, sessionId);
   activeSessions.set(sessionId, session);
 
+  // Send initial recent trades to client immediately
+  session.sendRecentTrades(generator.getRecentTrades());
+
   // Subscribe session to market events
   const unsubTrade = generator.onTrade((trade) => {
     session.pushTrade(trade);
   });
 
-  const unsub1m = candleEngine.onCandle('1m', (candle) => {
-    session.pushCandleUpdate('1m', candle);
+  const unsub1m = candleEngine.onCandle("1m", (candle) => {
+    session.pushCandleUpdate("1m", candle);
   });
 
-  const unsub5m = candleEngine.onCandle('5m', (candle) => {
-    session.pushCandleUpdate('5m', candle);
+  const unsub5m = candleEngine.onCandle("5m", (candle) => {
+    session.pushCandleUpdate("5m", candle);
   });
 
   const unsubOB = orderBook.onDelta((delta) => {
@@ -103,17 +115,20 @@ wss.on('connection', (ws: WebSocket) => {
     unsub5m();
     unsubOB();
     activeSessions.delete(sessionId);
-    console.log(`[WS] Client disconnected: ${sessionId} (${activeSessions.size} remaining)`);
+    console.log(
+      `[WS] Client disconnected: ${sessionId} (${activeSessions.size} remaining)`,
+    );
   });
 });
 
 // ---- Start ----
 export function startServer(): http.Server {
   generator.start();
-  server.listen(PORT, '0.0.0.0', () => {
+  server.listen(PORT, "0.0.0.0", () => {
     console.log(`✅ Backend running on port ${PORT}`);
     console.log(`   REST: http://localhost:${PORT}/api/candles?interval=1m`);
     console.log(`   REST: http://localhost:${PORT}/api/orderbook/snapshot`);
+    console.log(`   REST: http://localhost:${PORT}/api/trades`);
     console.log(`   WS:   ws://localhost:${PORT}/ws`);
   });
   return server;

@@ -33,9 +33,15 @@
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
-    "extensionsToTreatAsEsm": [".ts"],
-    "roots": ["<rootDir>/tests"],
-    "testMatch": ["**/*.test.ts"],
+    "extensionsToTreatAsEsm": [
+      ".ts"
+    ],
+    "roots": [
+      "<rootDir>/tests"
+    ],
+    "testMatch": [
+      "**/*.test.ts"
+    ],
     "transform": {
       "^.+\\.ts$": [
         "ts-jest",

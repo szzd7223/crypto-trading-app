@@ -1,4 +1,4 @@
-import { create, StateCreator } from 'zustand';
+import { create, StateCreator } from "zustand";
 import type {
   Trade,
   OHLCVCandle,
@@ -6,19 +6,23 @@ import type {
   Interval,
   DeliveryTier,
   ConnectionStatus,
-} from '@/types';
+} from "@/types";
 
 // ============================================================
 // Slice: Market (price + recent trades)
 // ============================================================
 interface MarketSlice {
   price: number | null;
-  priceChange: number;       // absolute change since last update
+  priceChange: number; // absolute change since last update
   recentTrades: Trade[];
   setTrade: (trade: Trade) => void;
+  setRecentTrades: (trades: Trade[]) => void;
 }
 
-const createMarketSlice: StateCreator<AppStore, [], [], MarketSlice> = (set, get) => ({
+const createMarketSlice: StateCreator<AppStore, [], [], MarketSlice> = (
+  set,
+  get,
+) => ({
   price: null,
   priceChange: 0,
   recentTrades: [],
@@ -33,6 +37,16 @@ const createMarketSlice: StateCreator<AppStore, [], [], MarketSlice> = (set, get
       recentTrades: [trade, ...existing].slice(0, 50),
     });
   },
+  setRecentTrades: (trades) => {
+    if (trades.length === 0) return;
+    const latest = trades[0];
+    const prev = get().price;
+    set({
+      price: prev !== null ? prev : (latest?.price ?? null),
+      priceChange: prev !== null && latest ? latest.price - prev : 0,
+      recentTrades: trades.slice(0, 50),
+    });
+  },
 });
 
 // ============================================================
@@ -42,10 +56,16 @@ interface OrderBookSlice {
   bids: OrderBookLevel[];
   asks: OrderBookLevel[];
   obSequenceId: number;
-  setOrderBook: (bids: OrderBookLevel[], asks: OrderBookLevel[], seqId: number) => void;
+  setOrderBook: (
+    bids: OrderBookLevel[],
+    asks: OrderBookLevel[],
+    seqId: number,
+  ) => void;
 }
 
-const createOrderBookSlice: StateCreator<AppStore, [], [], OrderBookSlice> = (set) => ({
+const createOrderBookSlice: StateCreator<AppStore, [], [], OrderBookSlice> = (
+  set,
+) => ({
   bids: [],
   asks: [],
   obSequenceId: 0,
@@ -64,15 +84,18 @@ interface CandleSlice {
   setActiveInterval: (interval: Interval) => void;
 }
 
-const createCandleSlice: StateCreator<AppStore, [], [], CandleSlice> = (set, get) => ({
+const createCandleSlice: StateCreator<AppStore, [], [], CandleSlice> = (
+  set,
+  get,
+) => ({
   candles1m: [],
   candles5m: [],
-  activeInterval: '1m',
+  activeInterval: "1m",
   setCandles: (interval, candles) =>
-    set(interval === '1m' ? { candles1m: candles } : { candles5m: candles }),
+    set(interval === "1m" ? { candles1m: candles } : { candles5m: candles }),
   updateActiveCandle: (interval, candle) => {
     if (interval !== get().activeInterval) return;
-    const key = interval === '1m' ? 'candles1m' : 'candles5m';
+    const key = interval === "1m" ? "candles1m" : "candles5m";
     const existing = get()[key];
     if (existing.length === 0) {
       set({ [key]: [candle] });
@@ -108,9 +131,11 @@ interface ConnectionSlice {
   setStale: (stale: boolean) => void;
 }
 
-const createConnectionSlice: StateCreator<AppStore, [], [], ConnectionSlice> = (set) => ({
-  status: 'connecting',
-  tier: 'full',
+const createConnectionSlice: StateCreator<AppStore, [], [], ConnectionSlice> = (
+  set,
+) => ({
+  status: "connecting",
+  tier: "full",
   effectiveRateMs: 0,
   rtt: 0,
   jitter: 0,

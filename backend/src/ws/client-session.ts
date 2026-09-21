@@ -9,8 +9,8 @@
 //  5. Stale silence detection
 // ============================================================
 
-import { WebSocket } from 'ws';
-import { TierManager, TIER_CONFIG } from './tier-manager.js';
+import { WebSocket } from "ws";
+import { TierManager, TIER_CONFIG } from "./tier-manager.js";
 import type {
   Trade,
   OHLCVCandle,
@@ -19,7 +19,7 @@ import type {
   WsClientMessage,
   WsServerMessage,
   DeliveryTier,
-} from '../types.js';
+} from "../types.js";
 
 /** How often to check for missed latency reports */
 const SILENCE_CHECK_INTERVAL_MS = 10_000;
@@ -30,7 +30,7 @@ export class ClientSession {
   private readonly tierManager: TierManager;
 
   // Active interval subscription
-  private subscribedInterval: Interval = '1m';
+  private subscribedInterval: Interval = "1m";
 
   // Pending chart update buffer for degraded/minimal tiers
   private pendingCandleUpdate: OHLCVCandle | null = null;
@@ -57,14 +57,20 @@ export class ClientSession {
 
     // Tell the client what tier they start on
     this.send({
-      type: 'connection_ready',
+      type: "connection_ready",
       tier: this.tierManager.currentTier,
       effectiveRateMs: this.tierManager.currentRateMs,
     });
 
-    this.ws.on('message', (raw) => this.handleMessage(raw.toString()));
-    this.ws.on('close', () => this.dispose());
-    this.ws.on('error', () => this.dispose());
+    this.ws.on("message", (raw) => this.handleMessage(raw.toString()));
+    this.ws.on("close", () => this.dispose());
+    this.ws.on("error", () => this.dispose());
+  }
+
+  /** Send initial batch of recent trades to newly connected client */
+  sendRecentTrades(trades: Trade[]): void {
+    if (!this.isOpen() || trades.length === 0) return;
+    this.send({ type: "recent_trades", data: trades });
   }
 
   /** Called by server when a new trade arrives from the generator */
@@ -73,9 +79,9 @@ export class ClientSession {
 
     const tier = this.tierManager.currentTier;
 
-    if (tier === 'full') {
+    if (tier === "full") {
       // Send immediately
-      this.send({ type: 'trade', data: trade });
+      this.send({ type: "trade", data: trade });
     } else {
       // Buffer — will be flushed by delivery timer
       this.pendingTrades.push(trade);
@@ -93,8 +99,8 @@ export class ClientSession {
 
     const tier = this.tierManager.currentTier;
 
-    if (tier === 'full') {
-      this.send({ type: 'candle_update', interval, data: candle });
+    if (tier === "full") {
+      this.send({ type: "candle_update", interval, data: candle });
     } else {
       // Buffer — only the latest candle state matters
       this.pendingCandleUpdate = candle;
@@ -106,7 +112,7 @@ export class ClientSession {
     if (!this.isOpen()) return;
     // Order book deltas are always sent immediately regardless of tier
     // (they are tiny and needed for correct sync)
-    this.send({ type: 'orderbook_delta', data: delta });
+    this.send({ type: "orderbook_delta", data: delta });
   }
 
   /** Register a cleanup callback (for unsubscribing from market events) */
@@ -130,19 +136,19 @@ export class ClientSession {
     }
 
     switch (msg.type) {
-      case 'ping':
+      case "ping":
         this.send({
-          type: 'pong',
+          type: "pong",
           id: msg.id,
           clientTs: msg.clientTs,
           serverTs: Date.now(),
         });
         break;
 
-      case 'latency_report':
+      case "latency_report":
         if (
-          typeof msg.rtt === 'number' &&
-          typeof msg.jitter === 'number' &&
+          typeof msg.rtt === "number" &&
+          typeof msg.jitter === "number" &&
           isFinite(msg.rtt) &&
           isFinite(msg.jitter)
         ) {
@@ -153,14 +159,14 @@ export class ClientSession {
         }
         break;
 
-      case 'subscribe':
-        if (msg.interval === '1m' || msg.interval === '5m') {
+      case "subscribe":
+        if (msg.interval === "1m" || msg.interval === "5m") {
           this.subscribedInterval = msg.interval;
           this.pendingCandleUpdate = null; // clear stale buffer
         }
         break;
 
-      case 'force_tier':
+      case "force_tier":
         this.tierManager.setOverride(msg.tier);
         break;
 
@@ -175,7 +181,7 @@ export class ClientSession {
   private onTierChange(tier: DeliveryTier, rateMs: number): void {
     // Notify client of tier change
     this.send({
-      type: 'tier_update',
+      type: "tier_update",
       tier,
       effectiveRateMs: rateMs,
       rtt: 0,
@@ -210,14 +216,18 @@ export class ClientSession {
 
     // Send the most recent buffered candle (incorporates all trades since last flush)
     if (this.pendingCandleUpdate) {
-      this.send({ type: 'candle_update', interval, data: this.pendingCandleUpdate });
+      this.send({
+        type: "candle_update",
+        interval,
+        data: this.pendingCandleUpdate,
+      });
       this.pendingCandleUpdate = null;
     }
 
     // Send the most recent trade from the buffer
     const lastTrade = this.pendingTrades[this.pendingTrades.length - 1];
     if (lastTrade) {
-      this.send({ type: 'trade', data: lastTrade });
+      this.send({ type: "trade", data: lastTrade });
       this.pendingTrades = [];
     }
   }

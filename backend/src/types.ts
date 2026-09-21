@@ -10,7 +10,7 @@ export interface Trade {
   timestamp: number; // Unix ms
   price: number;
   quantity: number;
-  side: 'buy' | 'sell';
+  side: "buy" | "sell";
 }
 
 export interface OHLCVCandle {
@@ -25,7 +25,7 @@ export interface OHLCVCandle {
   isClosed: boolean;
 }
 
-export type Interval = '1m' | '5m';
+export type Interval = "1m" | "5m";
 
 export interface OrderBookLevel {
   price: number;
@@ -50,33 +50,33 @@ export interface OrderBookDelta {
 
 // ---- WebSocket message types (server → client) ----
 
-export type DeliveryTier = 'full' | 'degraded' | 'minimal';
+export type DeliveryTier = "full" | "degraded" | "minimal";
 
 export interface WsTradeMessage {
-  type: 'trade';
+  type: "trade";
   data: Trade;
 }
 
 export interface WsCandleUpdateMessage {
-  type: 'candle_update';
+  type: "candle_update";
   interval: Interval;
   data: OHLCVCandle;
 }
 
 export interface WsOrderBookDeltaMessage {
-  type: 'orderbook_delta';
+  type: "orderbook_delta";
   data: OrderBookDelta;
 }
 
 export interface WsPongMessage {
-  type: 'pong';
+  type: "pong";
   id: string;
   clientTs: number;
   serverTs: number;
 }
 
 export interface WsTierUpdateMessage {
-  type: 'tier_update';
+  type: "tier_update";
   tier: DeliveryTier;
   effectiveRateMs: number; // ms between chart pushes
   rtt: number;
@@ -84,9 +84,14 @@ export interface WsTierUpdateMessage {
 }
 
 export interface WsConnectionReadyMessage {
-  type: 'connection_ready';
+  type: "connection_ready";
   tier: DeliveryTier;
   effectiveRateMs: number;
+}
+
+export interface WsRecentTradesMessage {
+  type: "recent_trades";
+  data: Trade[];
 }
 
 export type WsServerMessage =
@@ -95,29 +100,30 @@ export type WsServerMessage =
   | WsOrderBookDeltaMessage
   | WsPongMessage
   | WsTierUpdateMessage
-  | WsConnectionReadyMessage;
+  | WsConnectionReadyMessage
+  | WsRecentTradesMessage;
 
 // ---- WebSocket message types (client → server) ----
 
 export interface WsPingMessage {
-  type: 'ping';
+  type: "ping";
   id: string;
   clientTs: number;
 }
 
 export interface WsLatencyReportMessage {
-  type: 'latency_report';
-  rtt: number;   // ms
+  type: "latency_report";
+  rtt: number; // ms
   jitter: number; // ms (stddev of last N RTT samples)
 }
 
 export interface WsSubscribeMessage {
-  type: 'subscribe';
+  type: "subscribe";
   interval: Interval;
 }
 
 export interface WsForceOverrideMessage {
-  type: 'force_tier';
+  type: "force_tier";
   tier: DeliveryTier | null; // null = remove override
 }
 
