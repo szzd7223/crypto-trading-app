@@ -52,6 +52,15 @@
   background: #36425d;
 }
 
+/* Hide scrollbars utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Pulse animation for live connection & telemetry indicators */
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; transform: scale(1); }
@@ -65,4 +74,5 @@
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
+
 

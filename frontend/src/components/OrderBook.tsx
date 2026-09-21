@@ -48,7 +48,7 @@ export default function OrderBook() {
   return (
     <div className="flex flex-col h-full bg-[#121721] select-none">
       {/* Panel Title */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-[#1e2638] shrink-0">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-1.5 sm:py-2 border-b border-[#1e2638] shrink-0">
         <h2 className="text-xs font-bold uppercase tracking-wider text-[#eaecef]">
           Order Book
         </h2>
@@ -65,14 +65,14 @@ export default function OrderBook() {
       </div>
 
       {/* Column Headers */}
-      <div className="grid grid-cols-3 px-4 py-1 text-[10px] font-semibold text-[#848e9c] border-b border-[#161c28] shrink-0">
+      <div className="grid grid-cols-3 px-3 sm:px-4 py-1 text-[10px] font-semibold text-[#848e9c] border-b border-[#161c28] shrink-0">
         <span>Price (USDT)</span>
         <span className="text-right">Size (BTC)</span>
         <span className="text-right">Total</span>
       </div>
 
       {/* Asks Label */}
-      <div className="flex items-center justify-between px-4 py-0.5 bg-[#f6465d]/5 border-b border-[#1e2638]/40 shrink-0 text-[10px] font-bold uppercase tracking-wider text-[#f6465d]">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-0.5 bg-[#f6465d]/5 border-b border-[#1e2638]/40 shrink-0 text-[10px] font-bold uppercase tracking-wider text-[#f6465d]">
         <span className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-[#f6465d]" />
           Asks (Sells)
@@ -86,7 +86,7 @@ export default function OrderBook() {
           return (
             <div
               key={a.price}
-              className="relative grid grid-cols-3 px-4 py-0.5 font-mono text-xs tabular-nums hover:bg-[#181e2b] transition-colors cursor-default shrink-0"
+              className="relative grid grid-cols-3 px-3 sm:px-4 py-0.5 font-mono text-[11px] sm:text-xs tabular-nums hover:bg-[#181e2b] transition-colors cursor-default shrink-0"
             >
               <div
                 className="absolute inset-y-0 right-0 bg-[#f6465d]/15 pointer-events-none transition-[width] duration-100"
@@ -107,9 +107,9 @@ export default function OrderBook() {
       </div>
 
       {/* Mid-Market Spread & Live Price Bar */}
-      <div className="flex items-center justify-between px-4 py-2 border-y border-[#1e2638] bg-[#0e131d] shrink-0">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-1.5 sm:py-2 border-y border-[#1e2638] bg-[#0e131d] shrink-0">
         <div className="flex items-baseline gap-2 font-mono">
-          <span className="text-sm font-bold text-white tabular-nums">
+          <span className="text-xs sm:text-sm font-bold text-white tabular-nums">
             {price !== null ? fmtPrice(price) : "—"}
           </span>
           <span className="text-[10px] font-semibold text-[#848e9c]">USDT</span>
@@ -122,7 +122,7 @@ export default function OrderBook() {
               {spread.toFixed(2)}
             </span>
             {spreadPct !== null && (
-              <span className="text-[#848e9c] font-medium">
+              <span className="text-[#848e9c] font-medium hidden xs:inline">
                 ({spreadPct.toFixed(2)}%)
               </span>
             )}
@@ -131,7 +131,7 @@ export default function OrderBook() {
       </div>
 
       {/* Bids Label */}
-      <div className="flex items-center justify-between px-4 py-0.5 bg-[#0ecb81]/5 border-b border-[#1e2638]/40 shrink-0 text-[10px] font-bold uppercase tracking-wider text-[#0ecb81]">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-0.5 bg-[#0ecb81]/5 border-b border-[#1e2638]/40 shrink-0 text-[10px] font-bold uppercase tracking-wider text-[#0ecb81]">
         <span className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-[#0ecb81]" />
           Bids (Buys)
@@ -145,7 +145,7 @@ export default function OrderBook() {
           return (
             <div
               key={b.price}
-              className="relative grid grid-cols-3 px-4 py-0.5 font-mono text-xs tabular-nums hover:bg-[#181e2b] transition-colors cursor-default shrink-0"
+              className="relative grid grid-cols-3 px-3 sm:px-4 py-0.5 font-mono text-[11px] sm:text-xs tabular-nums hover:bg-[#181e2b] transition-colors cursor-default shrink-0"
             >
               <div
                 className="absolute inset-y-0 right-0 bg-[#0ecb81]/15 pointer-events-none transition-[width] duration-100"

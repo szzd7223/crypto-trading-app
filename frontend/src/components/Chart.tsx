@@ -268,15 +268,17 @@ export default function Chart() {
   return (
     <div className="flex flex-col h-full bg-[#0e131d]">
       {/* Chart Top Toolbar */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-[#1e2638] bg-[#121721] shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-[#94a3b8] font-semibold mr-1">Timeframe</span>
-          <div className="inline-flex items-center gap-1 rounded-lg bg-[#181e2b] p-1 border border-[#1e2638]">
+      <div className="flex items-center justify-between px-3 py-2 sm:px-5 sm:py-3 border-b border-[#1e2638] bg-[#121721] shrink-0 gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <span className="text-xs sm:text-sm text-[#94a3b8] font-semibold mr-0.5 sm:mr-1 hidden xs:inline">
+            Timeframe
+          </span>
+          <div className="inline-flex items-center gap-1 rounded-lg bg-[#181e2b] p-0.5 sm:p-1 border border-[#1e2638]">
             {INTERVALS.map(iv => (
               <button
                 key={iv}
                 onClick={() => switchInterval(iv)}
-                className={`text-sm font-bold px-3 py-1 rounded-md transition-all cursor-pointer ${
+                className={`text-xs sm:text-sm font-bold px-2.5 py-1 sm:px-3 sm:py-1 rounded-md transition-all cursor-pointer ${
                   activeInterval === iv
                     ? 'bg-[#2563eb] text-white shadow-sm'
                     : 'text-[#848e9c] hover:text-white hover:bg-[#202838]'
@@ -287,40 +289,42 @@ export default function Chart() {
             ))}
           </div>
 
-          <div className="h-5 w-px bg-[#1e2638] mx-2" />
+          <div className="h-4 sm:h-5 w-px bg-[#1e2638] mx-1 sm:mx-2" />
 
           <button
             onClick={handleFitContent}
             title="Fit candles to window"
-            className="text-sm font-semibold text-[#94a3b8] hover:text-white hover:bg-[#181e2b] px-3 py-1.5 rounded-md transition-colors cursor-pointer border border-[#1e2638]"
+            className="text-xs sm:text-sm font-semibold text-[#94a3b8] hover:text-white hover:bg-[#181e2b] px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md transition-colors cursor-pointer border border-[#1e2638]"
           >
-            Reset Scale
+            <span className="hidden sm:inline">Reset Scale</span>
+            <span className="sm:hidden">Reset</span>
           </button>
         </div>
 
         {/* Live / Stale connection warning */}
         {isStale && (
-          <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-[#f59e0b]/15 border border-[#f59e0b]/30 text-[#f59e0b] text-xs font-semibold">
-            <span className="w-2 h-2 rounded-full bg-[#f59e0b] animate-pulse-dot" />
-            STALE — Reconnecting
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#f59e0b]/15 border border-[#f59e0b]/30 text-[#f59e0b] text-[11px] sm:text-xs font-semibold shrink-0">
+            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#f59e0b] animate-pulse-dot" />
+            <span className="hidden sm:inline">STALE — Reconnecting</span>
+            <span className="sm:hidden">STALE</span>
           </div>
         )}
       </div>
 
       {/* OHLCV Dynamic HUD Overlay Bar */}
       {activeHud && (
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 px-5 py-2.5 bg-[#0e131d]/90 border-b border-[#161c28] text-sm font-mono select-none">
-          <span className="text-[#848e9c] font-medium">{activeHud.timeStr}</span>
-          <span className="text-[#848e9c]">
+        <div className="flex items-center gap-x-3 sm:gap-x-5 px-3 py-1.5 sm:px-5 sm:py-2.5 bg-[#0e131d]/90 border-b border-[#161c28] text-[11px] sm:text-xs font-mono select-none overflow-x-auto no-scrollbar whitespace-nowrap">
+          <span className="text-[#848e9c] font-medium shrink-0">{activeHud.timeStr}</span>
+          <span className="text-[#848e9c] shrink-0">
             O <span className="text-white font-semibold">{activeHud.open.toFixed(2)}</span>
           </span>
-          <span className="text-[#848e9c]">
+          <span className="text-[#848e9c] shrink-0">
             H <span className="text-[#0ecb81] font-semibold">{activeHud.high.toFixed(2)}</span>
           </span>
-          <span className="text-[#848e9c]">
+          <span className="text-[#848e9c] shrink-0">
             L <span className="text-[#f6465d] font-semibold">{activeHud.low.toFixed(2)}</span>
           </span>
-          <span className="text-[#848e9c]">
+          <span className="text-[#848e9c] shrink-0">
             C{' '}
             <span
               className={`font-bold ${
@@ -330,11 +334,11 @@ export default function Chart() {
               {activeHud.close.toFixed(2)}
             </span>
           </span>
-          <span className="text-[#848e9c]">
+          <span className="text-[#848e9c] shrink-0">
             V <span className="text-[#eaecef] font-semibold">{activeHud.volume.toFixed(2)} BTC</span>
           </span>
           <span
-            className={`font-bold ${
+            className={`font-bold shrink-0 ${
               activeHud.change >= 0 ? 'text-[#0ecb81]' : 'text-[#f6465d]'
             }`}
           >

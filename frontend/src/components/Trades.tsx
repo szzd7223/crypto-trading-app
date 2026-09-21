@@ -29,7 +29,7 @@ export default function Trades() {
   return (
     <div className="flex flex-col h-full bg-[#121721] select-none">
       {/* Panel Title */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-[#1e2638] shrink-0">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-1.5 sm:py-2 border-b border-[#1e2638] shrink-0">
         <h2 className="text-xs font-bold uppercase tracking-wider text-[#eaecef]">
           Recent Trades
         </h2>
@@ -46,7 +46,7 @@ export default function Trades() {
       </div>
 
       {/* Column Headers */}
-      <div className="grid grid-cols-3 px-4 py-1 text-[10px] font-semibold text-[#848e9c] border-b border-[#161c28] shrink-0">
+      <div className="grid grid-cols-3 px-3 sm:px-4 py-1 text-[10px] font-semibold text-[#848e9c] border-b border-[#161c28] shrink-0">
         <span>Price (USDT)</span>
         <span className="text-right">Size (BTC)</span>
         <span className="text-right">Time</span>
@@ -57,7 +57,7 @@ export default function Trades() {
         {trades.map((t) => (
           <div
             key={t.id}
-            className="grid grid-cols-3 px-4 py-0.5 font-mono text-xs tabular-nums hover:bg-[#181e2b] transition-colors cursor-default"
+            className="grid grid-cols-3 px-3 sm:px-4 py-0.5 font-mono text-[11px] sm:text-xs tabular-nums hover:bg-[#181e2b] transition-colors cursor-default"
           >
             <span
               className={`font-bold ${
@@ -69,7 +69,7 @@ export default function Trades() {
             <span className="text-right font-medium text-[#eaecef]">
               {fmtQty(t.quantity)}
             </span>
-            <span className="text-right text-[#848e9c] text-xs font-medium">
+            <span className="text-right text-[#848e9c] text-[10px] sm:text-xs font-medium">
               {fmtTime(t.timestamp)}
             </span>
           </div>
